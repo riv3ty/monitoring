@@ -1,7 +1,16 @@
-from flask import Flask, render_template, jsonify, redirect, url_for, request, flash
+from flask import Flask, render_template, jsonify, redirect, url_for, request, flash, session
 from flask_socketio import SocketIO
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+from models import db, User, UserLog
+from telegram_notifier import TelegramNotifier
+from dotenv import load_dotenv
 import json
+import os
+import asyncio
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
@@ -23,6 +32,9 @@ with app.app_context():
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+# Initialize Telegram notifier
+notifier = TelegramNotifier()
 
 # Store connected agents and their metrics
 agents = {}
@@ -105,6 +117,13 @@ def handle_metrics_update(data):
         
         agents[hostname] = data
         print(f"Updated agents dict: {agents}")
+        
+        # Check thresholds and send notifications
+        if notifier:
+            try:
+                asyncio.run(notifier.check_thresholds(hostname, data))
+            except Exception as e:
+                print(f"Error sending Telegram notification: {e}")
         
         response_data = {'agents': list(agents.values())}
         print(f"Emitting update to all clients: {response_data}")

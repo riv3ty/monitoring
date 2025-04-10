@@ -1,6 +1,13 @@
 # Test scripts
 kill_processes.sh
 
+# Environment variables
+.env
+
+# Database
+*.db
+*.sqlite3
+
 # Python
 __pycache__/
 *.py[cod]
