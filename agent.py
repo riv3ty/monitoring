@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 
 class MonitoringAgent:
-    def __init__(self, server_url='http://localhost:5000'):
+    def __init__(self, server_url='http://localhost:5011'):
         self.server_url = server_url
         self.sio = socketio.Client()
         self.hostname = platform.node()
@@ -13,17 +13,24 @@ class MonitoringAgent:
     def get_metrics(self):
         # CPU metrics
         cpu_percent = psutil.cpu_percent(interval=1)
-        cpu_freq = psutil.cpu_freq()
-        cpu_temp = None
+        try:
+            cpu_freq = psutil.cpu_freq()
+            cpu_freq_current = round(cpu_freq.current, 2) if cpu_freq else None
+        except Exception:
+            cpu_freq_current = None
 
+        cpu_temp = None
         # Try to get CPU temperature
         if hasattr(psutil, "sensors_temperatures"):
-            temps = psutil.sensors_temperatures()
-            if temps:
-                for name, entries in temps.items():
-                    if entries:
-                        cpu_temp = entries[0].current
-                        break
+            try:
+                temps = psutil.sensors_temperatures()
+                if temps:
+                    for name, entries in temps.items():
+                        if entries:
+                            cpu_temp = entries[0].current
+                            break
+            except Exception:
+                pass
 
         # Memory metrics
         memory = psutil.virtual_memory()
@@ -36,7 +43,7 @@ class MonitoringAgent:
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "cpu": {
                 "usage": cpu_percent,
-                "frequency": round(cpu_freq.current, 2) if cpu_freq else None,
+                "frequency": cpu_freq_current,
                 "temperature": round(cpu_temp, 2) if cpu_temp else None
             },
             "memory": {
@@ -52,22 +59,42 @@ class MonitoringAgent:
         }
 
     def run(self):
+        # Setup socket.io event handlers
+        @self.sio.event
+        def connect():
+            print(f"Connected to server at {self.server_url}")
+
+        @self.sio.event
+        def connect_error(error):
+            print(f"Connection error: {error}")
+
+        @self.sio.event
+        def disconnect():
+            print("Disconnected from server")
+
+        # Configure socket.io client
+        self.sio.reconnection = True
+        self.sio.reconnection_attempts = 0  # infinite retries
+        self.sio.reconnection_delay = 1
+        self.sio.reconnection_delay_max = 5
+
+        # Initial connection
+        print(f"Connecting to {self.server_url}...")
+        self.sio.connect(self.server_url)
+
         while True:
             try:
-                if not self.sio.connected:
-                    print(f"Connecting to {self.server_url}...")
-                    self.sio.connect(self.server_url)
-                    print("Connected!")
-
                 metrics = self.get_metrics()
-                print(f"Sending metrics: {metrics}")
-                self.sio.emit('metrics_update', metrics)
+                if self.sio.connected:
+                    try:
+                        self.sio.emit('metrics_update', metrics)
+                        print("Metrics sent successfully")
+                    except Exception as e:
+                        print(f"Error sending metrics: {e}")
                 time.sleep(2)
 
             except Exception as e:
-                print(f"Error: {str(e)}")
-                if self.sio.connected:
-                    self.sio.disconnect()
+                print(f"Error collecting metrics: {str(e)}")
                 time.sleep(5)
 
 if __name__ == '__main__':

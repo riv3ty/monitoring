@@ -55,7 +55,7 @@ def index():
 
 @socketio.on('connect')
 def handle_connect():
-    print(f'Client connected')
+    print(f'Client connected from {request.sid}')
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -63,9 +63,22 @@ def handle_disconnect():
 
 @socketio.on('metrics_update')
 def handle_metrics_update(data):
-    hostname = data.get('hostname')
-    agents[hostname] = data
-    socketio.emit('metrics_update', {'agents': list(agents.values())})
+    print(f"Received metrics update from {request.sid}: {data}")
+    try:
+        hostname = data.get('hostname')
+        if not hostname:
+            print(f"Error: No hostname in data: {data}")
+            return
+        
+        agents[hostname] = data
+        print(f"Updated agents dict: {agents}")
+        
+        response_data = {'agents': list(agents.values())}
+        print(f"Emitting update to all clients: {response_data}")
+        socketio.emit('metrics_update', response_data)
+    except Exception as e:
+        print(f"Error in handle_metrics_update: {str(e)}")
+        print(f"Data was: {data}")
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
+    socketio.run(app, host='0.0.0.0', port=5011, debug=True, allow_unsafe_werkzeug=True)

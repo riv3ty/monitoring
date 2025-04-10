@@ -41,14 +41,23 @@
 <body>
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>System Monitoring</h1>
+            <div class="d-flex align-items-center">
+                <h1 class="me-3">System Monitoring</h1>
+                <span id="connection-status" class="badge bg-warning">Verbinde...</span>
+            </div>
             <a href="/logout" class="btn btn-danger">Abmelden</a>
         </div>
         <div id="agents-container"></div>
     </div>
 
     <script>
-        const socket = io();
+        const socket = io({
+            transports: ['polling'],
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            reconnectionAttempts: Infinity
+        });
         
         function getProgressBarClass(percent) {
             if (percent >= 90) return 'critical';
@@ -119,14 +128,29 @@
 
         socket.on('connect', () => {
             console.log('Connected to server');
+            document.getElementById('connection-status').textContent = 'Verbunden';
+            document.getElementById('connection-status').className = 'badge bg-success';
         });
 
         socket.on('metrics_update', (data) => {
-            updateAgents(data.agents);
+            console.log('Received metrics update:', data);
+            if (data && data.agents) {
+                updateAgents(data.agents);
+            } else {
+                console.error('Invalid metrics data received:', data);
+            }
         });
 
         socket.on('disconnect', () => {
             console.log('Disconnected from server');
+            document.getElementById('connection-status').textContent = 'Getrennt';
+            document.getElementById('connection-status').className = 'badge bg-danger';
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('Connection error:', error);
+            document.getElementById('connection-status').textContent = 'Verbindungsfehler';
+            document.getElementById('connection-status').className = 'badge bg-warning';            
         });
     </script>
 </body>
