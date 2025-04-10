@@ -33,11 +33,12 @@
 {% block scripts %}
 <script>
     const socket = io({
-        transports: ['polling'],
+        transports: ['polling', 'websocket'],
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
-        reconnectionAttempts: Infinity
+        reconnectionAttempts: Infinity,
+        path: '/socket.io'
     });
     
     function getProgressBarClass(percent) {
@@ -70,34 +71,37 @@
                         <div class="col-md-4">
                             <h6>CPU</h6>
                             <div class="progress mb-2">
-                                <div class="progress-bar ${getProgressBarClass(agent.cpu.usage)}"
-                                     style="width: ${agent.cpu.usage}%">
-                                    ${agent.cpu.usage}%
+                                <div class="progress-bar ${getProgressBarClass(agent.cpu_percent)}"
+                                     style="width: ${agent.cpu_percent}%">
+                                    ${agent.cpu_percent}%
                                 </div>
                             </div>
                             <div class="temperature">
-                                🌡️ ${formatTemperature(agent.cpu.temperature)}
+                                🌡️ ${formatTemperature(agent.details.cpu.temperature)}
+                            </div>
+                            <div class="frequency">
+                                ⚡ ${agent.details.cpu.frequency ? agent.details.cpu.frequency + ' MHz' : 'N/A'}
                             </div>
                         </div>
                         <div class="col-md-4">
                             <h6>Memory</h6>
                             <div class="progress mb-2">
-                                <div class="progress-bar ${getProgressBarClass(agent.memory.percent)}"
-                                     style="width: ${agent.memory.percent}%">
-                                    ${agent.memory.percent}%
+                                <div class="progress-bar ${getProgressBarClass(agent.memory_percent)}"
+                                     style="width: ${agent.memory_percent}%">
+                                    ${agent.memory_percent}%
                                 </div>
                             </div>
-                            <small>${agent.memory.used}GB / ${agent.memory.total}GB</small>
+                            <small>${agent.details.memory.used}GB / ${agent.details.memory.total}GB</small>
                         </div>
                         <div class="col-md-4">
                             <h6>Disk</h6>
                             <div class="progress mb-2">
-                                <div class="progress-bar ${getProgressBarClass(agent.disk.percent)}"
-                                     style="width: ${agent.disk.percent}%">
-                                    ${agent.disk.percent}%
+                                <div class="progress-bar ${getProgressBarClass(agent.disk_percent)}"
+                                     style="width: ${agent.disk_percent}%">
+                                    ${agent.disk_percent}%
                                 </div>
                             </div>
-                            <small>${agent.disk.used}GB / ${agent.disk.total}GB</small>
+                            <small>${agent.details.disk.used}GB / ${agent.details.disk.total}GB</small>
                         </div>
                     </div>
                 </div>

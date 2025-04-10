@@ -8,9 +8,16 @@ from datetime import datetime
 class MonitoringAgent:
     def __init__(self, server_url='http://localhost:5011', hostname=None, test_mode=False):
         self.server_url = server_url
-        self.sio = socketio.Client()
+        self.sio = socketio.Client(logger=True, engineio_logger=True)
         self.hostname = hostname or platform.node()
         self.test_mode = test_mode
+        
+        # Konfiguriere Socket.IO-Client
+        self.sio.eio.transports = ['polling', 'websocket']
+        self.sio.reconnection = True
+        self.sio.reconnection_attempts = 0  # Unendlich
+        self.sio.reconnection_delay = 1
+        self.sio.reconnection_delay_max = 5
 
     def get_metrics(self):
         if self.test_mode:

@@ -17,7 +17,18 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///monitoring.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-socketio = SocketIO(app, cors_allowed_origins='*')
+# SocketIO Konfiguration für Produktivumgebung
+socketio = SocketIO(
+    app,
+    cors_allowed_origins='*',
+    async_mode='eventlet',
+    logger=True,
+    engineio_logger=True,
+    ping_timeout=60,
+    ping_interval=25,
+    max_http_buffer_size=1e8,
+    allow_upgrades=True
+)
 db.init_app(app)
 
 # Initialize Flask-Login
