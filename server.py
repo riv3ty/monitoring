@@ -39,6 +39,9 @@ notifier = TelegramNotifier()
 # Store connected agents and their metrics
 agents = {}
 
+# Store agent status
+agent_status = {}
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -101,10 +104,31 @@ def index():
 @socketio.on('connect')
 def handle_connect():
     print(f'Client connected from {request.sid}')
+    # Note: The actual agent connection will be handled when we receive the first metrics
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print(f'Client disconnected')
+    sid = request.sid
+    print(f'Client disconnected: {sid}')
+    
+    # Find which agent disconnected
+    disconnected_hostname = None
+    for hostname, status in agent_status.items():
+        if status.get('sid') == sid:
+            disconnected_hostname = hostname
+            break
+    
+    if disconnected_hostname:
+        # Remove agent data
+        agents.pop(disconnected_hostname, None)
+        agent_status.pop(disconnected_hostname, None)
+        
+        # Send notification
+        if notifier:
+            asyncio.run(notifier.send_message(f'🔴 Agent {disconnected_hostname} went offline'))
+        
+        # Update all clients
+        socketio.emit('metrics_update', {'agents': list(agents.values())})
 
 @socketio.on('metrics_update')
 def handle_metrics_update(data):
@@ -115,7 +139,18 @@ def handle_metrics_update(data):
             print(f"Error: No hostname in data: {data}")
             return
         
+        # Check if this is a new agent or reconnecting agent
+        if hostname not in agents:
+            if notifier:
+                asyncio.run(notifier.send_message(f'🟢 Agent {hostname} is now online'))
+        
+        # Update agent data and status
         agents[hostname] = data
+        agent_status[hostname] = {
+            'last_seen': data.get('timestamp', 0),
+            'sid': request.sid
+        }
+        
         print(f"Updated agents dict: {agents}")
         
         # Check thresholds and send notifications

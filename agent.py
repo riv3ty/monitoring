@@ -40,21 +40,23 @@ class MonitoringAgent:
 
         return {
             "hostname": self.hostname,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "cpu": {
-                "usage": cpu_percent,
-                "frequency": cpu_freq_current,
-                "temperature": round(cpu_temp, 2) if cpu_temp else None
-            },
-            "memory": {
-                "total": round(memory.total / (1024**3), 2),
-                "used": round(memory.used / (1024**3), 2),
-                "percent": memory.percent
-            },
-            "disk": {
-                "total": round(disk.total / (1024**3), 2),
-                "used": round(disk.used / (1024**3), 2),
-                "percent": disk.percent
+            "timestamp": int(time.time()),
+            "cpu_percent": cpu_percent,
+            "memory_percent": memory.percent,
+            "disk_percent": disk.percent,
+            "details": {
+                "cpu": {
+                    "frequency": cpu_freq_current,
+                    "temperature": round(cpu_temp, 2) if cpu_temp else None
+                },
+                "memory": {
+                    "total": round(memory.total / (1024**3), 2),
+                    "used": round(memory.used / (1024**3), 2)
+                },
+                "disk": {
+                    "total": round(disk.total / (1024**3), 2),
+                    "used": round(disk.used / (1024**3), 2)
+                }
             }
         }
 
