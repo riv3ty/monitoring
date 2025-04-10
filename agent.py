@@ -87,6 +87,8 @@ class MonitoringAgent:
                 metrics = self.get_metrics()
                 if self.sio.connected:
                     try:
+                        # Add session ID to metrics
+                        metrics['sid'] = self.sio.sid
                         self.sio.emit('metrics_update', metrics)
                         print("Metrics sent successfully")
                     except Exception as e:

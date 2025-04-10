@@ -1,6 +1,9 @@
 # Test scripts
 kill_processes.sh
 
+# Environment variables
+.env
+
 # Python
 __pycache__/
 *.py[cod]
