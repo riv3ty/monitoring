@@ -2,15 +2,41 @@ import psutil
 import platform
 import socketio
 import time
+import argparse
 from datetime import datetime
 
 class MonitoringAgent:
-    def __init__(self, server_url='http://localhost:5011'):
+    def __init__(self, server_url='http://localhost:5011', hostname=None, test_mode=False):
         self.server_url = server_url
         self.sio = socketio.Client()
-        self.hostname = platform.node()
+        self.hostname = hostname or platform.node()
+        self.test_mode = test_mode
 
     def get_metrics(self):
+        if self.test_mode:
+            # Simuliere hohe Auslastung für Tests
+            return {
+                "hostname": self.hostname,
+                "timestamp": int(time.time()),
+                "cpu_percent": 95.0,
+                "memory_percent": 92.0,
+                "disk_percent": 91.0,
+                "details": {
+                    "cpu": {
+                        "frequency": 2500,
+                        "temperature": 75.0
+                    },
+                    "memory": {
+                        "total": 16.0,
+                        "used": 14.72
+                    },
+                    "disk": {
+                        "total": 512.0,
+                        "used": 465.92
+                    }
+                }
+            }
+        
         # CPU metrics
         cpu_percent = psutil.cpu_percent(interval=1)
         try:
@@ -40,21 +66,23 @@ class MonitoringAgent:
 
         return {
             "hostname": self.hostname,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "cpu": {
-                "usage": cpu_percent,
-                "frequency": cpu_freq_current,
-                "temperature": round(cpu_temp, 2) if cpu_temp else None
-            },
-            "memory": {
-                "total": round(memory.total / (1024**3), 2),
-                "used": round(memory.used / (1024**3), 2),
-                "percent": memory.percent
-            },
-            "disk": {
-                "total": round(disk.total / (1024**3), 2),
-                "used": round(disk.used / (1024**3), 2),
-                "percent": disk.percent
+            "timestamp": int(time.time()),
+            "cpu_percent": cpu_percent,
+            "memory_percent": memory.percent,
+            "disk_percent": disk.percent,
+            "details": {
+                "cpu": {
+                    "frequency": cpu_freq_current,
+                    "temperature": round(cpu_temp, 2) if cpu_temp else None
+                },
+                "memory": {
+                    "total": round(memory.total / (1024**3), 2),
+                    "used": round(memory.used / (1024**3), 2)
+                },
+                "disk": {
+                    "total": round(disk.total / (1024**3), 2),
+                    "used": round(disk.used / (1024**3), 2)
+                }
             }
         }
 
@@ -87,8 +115,6 @@ class MonitoringAgent:
                 metrics = self.get_metrics()
                 if self.sio.connected:
                     try:
-                        # Add session ID to metrics
-                        metrics['sid'] = self.sio.sid
                         self.sio.emit('metrics_update', metrics)
                         print("Metrics sent successfully")
                     except Exception as e:
@@ -100,5 +126,15 @@ class MonitoringAgent:
                 time.sleep(5)
 
 if __name__ == '__main__':
-    agent = MonitoringAgent()
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='System Monitoring Agent')
+    parser.add_argument('--server', default='http://localhost:5011',
+                      help='Monitoring server URL (default: http://localhost:5011)')
+    parser.add_argument('--hostname', help='Custom hostname (default: system hostname)')
+    parser.add_argument('--test', action='store_true',
+                      help='Run in test mode with simulated high resource usage')
+    args = parser.parse_args()
+
+    # Start the agent
+    agent = MonitoringAgent(server_url=args.server, hostname=args.hostname, test_mode=args.test)
     agent.run()

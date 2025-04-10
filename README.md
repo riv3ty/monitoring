@@ -54,40 +54,6 @@ A real-time system monitoring application built with Python, Flask, and Socket.I
 
 The system uses Socket.IO for real-time communication between the server and agent. The web interface updates automatically when new metrics are received.
 
-## Telegram Notifications
-
-The system can send notifications via Telegram when:
-- A device comes online
-- A device goes offline
-- RAM usage exceeds 90%
-- Disk usage exceeds 70%
-- CPU usage exceeds 80%
-
-### Setting up Telegram Notifications
-
-1. Create a new Telegram bot:
-   - Open Telegram and search for @BotFather
-   - Send `/newbot` and follow the instructions
-   - Save the bot token you receive
-
-2. Get your chat ID:
-   - Send a message to your new bot
-   - Access `https://api.telegram.org/bot<YourBOTToken>/getUpdates`
-   - Look for the `chat` object and note the `id` field
-
-3. Create a `.env` file based on `.env.example`:
-   ```bash
-   cp .env.example .env
-   ```
-
-4. Edit the `.env` file and add your bot token and chat ID:
-   ```
-   TELEGRAM_BOT_TOKEN=your_bot_token_here
-   TELEGRAM_CHAT_ID=your_chat_id_here
-   ```
-
-5. Restart the server for the changes to take effect
-
 ## Übersicht
 Dieses Projekt implementiert ein System zur Überwachung von Server-Ressourcen und Systemmetriken. Es besteht aus einem Agent und einem Server-Teil, die zusammenarbeiten, um wichtige Systeminformationen zu sammeln und darzustellen.
 
