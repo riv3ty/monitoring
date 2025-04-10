@@ -6,7 +6,7 @@
         <div class="col-md-6">
             <div class="card mt-5">
                 <div class="card-header">
-                    <h2 class="text-center">Login</h2>
+                    <h2 class="text-center">Registrierung</h2>
                 </div>
                 <div class="card-body">
                     {% with messages = get_flashed_messages() %}
@@ -25,10 +25,14 @@
                             <label for="password">Passwort</label>
                             <input type="password" class="form-control" id="password" name="password" required>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
+                        <div class="form-group">
+                            <label for="confirm_password">Passwort bestätigen</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Registrieren</button>
                     </form>
                     <div class="text-center mt-3">
-                        <p>Noch kein Konto? <a href="{{ url_for('register') }}">Jetzt registrieren</a></p>
+                        <a href="{{ url_for('login') }}">Zurück zum Login</a>
                     </div>
                 </div>
             </div>
